@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANALYST — AI 주식 분석 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface2: #f2f0eb;
+  --border: #e8e4dc;
+  --border2: #d4cfc4;
+  --ink: #1a1814;
+  --ink2: #4a4640;
+  --ink3: #9a9590;
+  --accent: #c8963c;
+  --accent2: #e8b45a;
+  --positive: #2d6a4f;
+  --negative: #9b2335;
+  --neutral: #4a6fa5;
+  --tag-bg: #f0ece3;
+  --shadow: 0 1px 3px rgba(26,24,20,.08), 0 4px 16px rgba(26,24,20,.04);
+  --shadow-lg: 0 4px 24px rgba(26,24,20,.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── 헤더 ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 0 var(--border);
+}
+.header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+.brand-sub {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 1px;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--positive);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.date-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+/* ── 레이아웃 ── */
+.container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px 32px;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+
+/* ── 검색 섹션 ── */
+.search-section {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 28px 32px;
+  box-shadow: var(--shadow);
+}
+.search-headline {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+}
+.search-desc {
+  font-size: 13px;
+  color: var(--ink3);
+  margin-bottom: 20px;
+}
+.search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.search-input {
+  flex: 1;
+  padding: 12px 18px;
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .2s;
+}
+.search-input:focus { border-color: var(--accent); background: #fff; }
+.search-input::placeholder { color: var(--ink3); }
+.btn-analyze {
+  padding: 12px 28px;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-analyze:hover { background: var(--accent); }
+.btn-analyze:disabled { background: var(--ink3); cursor: not-allowed; }
+.quick-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.quick-label {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 1px;
+  margin-right: 4px;
+}
+.qtag {
+  padding: 5px 14px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.qtag:hover { border-color: var(--accent); color: var(--accent); background: rgba(200,150,60,.04); }
+
+/* ── 카드 공통 ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.card-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+.card-meta {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.card-body { padding: 20px 24px; }
+
+/* ── 결과 영역 ── */
+.result-area { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── 테마 스코어카드 ── */
+.scorecard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.sc-theme {
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+}
+.sc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -1px;
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+.sc-summary {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.7;
+  margin-bottom: 16px;
+  max-width: 600px;
+}
+.sc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.sc-tag {
+  padding: 4px 12px;
+  font-size: 11px;
+  letter-spacing: .5px;
+  border: 1px solid;
+}
+.tag-pos { border-color: var(--positive); color: var(--positive); background: rgba(45,106,79,.05); }
+.tag-neg { border-color: var(--negative); color: var(--negative); background: rgba(155,35,53,.05); }
+.tag-neu { border-color: var(--neutral); color: var(--neutral); background: rgba(74,111,165,.05); }
+.tag-acc { border-color: var(--accent); color: var(--accent); background: rgba(200,150,60,.05); }
+
+.sc-score-wrap { text-align: center; min-width: 120px; }
+.sc-score-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.sc-grade {
+  display: inline-block;
+  padding: 4px 16px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  font-family: 'DM Mono', monospace;
+  border: 1px solid;
+  margin-top: 8px;
+}
+.sc-ratio {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 8px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── 호재/악재 ── */
+.factor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.factor-col { padding: 0; }
+.factor-col-head {
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.factor-col-title { font-size: 13px; font-weight: 700; letter-spacing: .5px; }
+.factor-col-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.factor-col.pos-col { border-right: 1px solid var(--border); }
+.factor-col.pos-col .factor-col-title { color: var(--positive); }
+.factor-col.pos-col .factor-col-count { background: rgba(45,106,79,.08); color: var(--positive); }
+.factor-col.neg-col .factor-col-title { color: var(--negative); }
+.factor-col.neg-col .factor-col-count { background: rgba(155,35,53,.08); color: var(--negative); }
+
+.factor-item {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.factor-item:last-child { border-bottom: none; }
+.fi-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.fi-body { flex: 1; }
+.fi-text { font-size: 12px; line-height: 1.6; color: var(--ink2); }
+.fi-text strong { color: var(--ink); font-weight: 600; }
+.fi-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  margin-top: 4px;
+  letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.badge-strong { background: rgba(45,106,79,.1); color: var(--positive); }
+.badge-mid { background: rgba(200,150,60,.1); color: var(--accent); }
+.badge-weak { background: rgba(155,35,53,.08); color: var(--negative); }
+
+/* ── 종목 테이블 ── */
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table thead tr {
+  border-bottom: 2px solid var(--border2);
+}
+.stock-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+}
+.stock-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.stock-table tr:last-child td { border-bottom: none; }
+.stock-table tbody tr {
+  cursor: pointer;
+  transition: background .15s;
+}
+.stock-table tbody tr:hover { background: var(--surface2); }
+.stock-table tbody tr.selected { background: rgba(200,150,60,.06); }
+
+.st-name { font-weight: 600; font-size: 14px; color: var(--ink); }
+.st-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.st-market { font-size: 10px; padding: 2px 7px; border: 1px solid var(--border2); color: var(--ink3); font-family: 'DM Mono', monospace; }
+
+.verdict-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.vp-sb { background: rgba(45,106,79,.1); color: var(--positive); }
+.vp-b  { background: rgba(200,150,60,.1); color: var(--accent); }
+.vp-w  { background: rgba(74,111,165,.1); color: var(--neutral); }
+.vp-av { background: rgba(155,35,53,.08); color: var(--negative); }
+
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+.score-bar-mini {
+  width: 50px;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sbm-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1.2s ease;
+}
+
+/* ── 시나리오 ── */
+.scenario-list { display: flex; flex-direction: column; gap: 12px; }
+.scenario-item {
+  padding: 16px 20px;
+  border-left: 3px solid;
+  background: var(--surface2);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+.si-bull { border-color: var(--positive); }
+.si-base { border-color: var(--accent); }
+.si-bear { border-color: var(--negative); }
+.si-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.si-bull .si-label { color: var(--positive); }
+.si-base .si-label { color: var(--accent); }
+.si-bear .si-label { color: var(--negative); }
+.si-desc { font-size: 12px; color: var(--ink2); line-height: 1.6; }
+.si-prob-wrap { text-align: right; }
+.si-prob-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.si-bull .si-prob-num { color: var(--positive); }
+.si-base .si-prob-num { color: var(--accent); }
+.si-bear .si-prob-num { color: var(--negative); }
+.si-prob-label { font-size: 10px; color: var(--ink3); letter-spacing: 1px; }
+.si-returns {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.si-ret {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  color: var(--ink2);
+}
+
+/* ── 오른쪽 패널 ── */
+.right-col { display: flex; flex-direction: column; gap: 20px; }
+
+/* 골든픽 */
+.golden-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.golden-top {
+  background: var(--ink);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.golden-top::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(200,150,60,.15);
+}
+.golden-eyebrow {
+  font-size: 9px;
+  color: var(--accent2);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-family: 'DM Mono', monospace;
+}
+.golden-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.golden-tagline { font-size: 12px; color: rgba(255,255,255,.55); }
+.golden-body { padding: 20px 24px; }
+.golden-score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.gs-left { font-size: 11px; color: var(--ink3); letter-spacing: 1px; font-family: 'DM Mono', monospace; }
+.gs-right {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--positive);
+}
+.golden-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.gmet {
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.gmet-lbl { font-size: 9px; color: var(--ink3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+.gmet-val { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--ink); }
+.golden-reasons { display: flex; flex-direction: column; gap: 0; }
+.gr {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--ink2);
+}
+.gr:last-child { border: none; }
+.gr-icon { flex-shrink: 0; }
+
+/* 뉴스 피드 */
+.news-feed { display: flex; flex-direction: column; }
+.news-item {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.news-item:hover { background: var(--surface2); }
+.news-item:last-child { border: none; }
+.ni-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.ni-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink3); }
+.ni-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.nb-hot { background: rgba(155,35,53,.1); color: var(--negative); }
+.nb-pos { background: rgba(45,106,79,.1); color: var(--positive); }
+.nb-neg { background: rgba(155,35,53,.08); color: var(--negative); }
+.nb-info { background: rgba(74,111,165,.08); color: var(--neutral); }
+.ni-text { font-size: 12px; line-height: 1.5; color: var(--ink2); }
+.ni-text strong { color: var(--ink); }
+
+/* ── 종목 상세 모달 ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,24,20,.4);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.modal-close {
+  width: 28px; height: 28px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--ink3);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.modal-body { padding: 24px; }
+.modal-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+.mg-item { padding: 12px; background: var(--surface2); border: 1px solid var(--border); text-align: center; }
+.mg-lbl { font-size: 9px; color: var(--ink3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+.mg-val { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
+.modal-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.checklist { display: flex; flex-direction: column; gap: 0; }
+.cl-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.cl-item:last-child { border: none; }
+.cl-icon { width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+.cl-ok { background: rgba(45,106,79,.12); color: var(--positive); }
+.cl-no { background: rgba(155,35,53,.1); color: var(--negative); }
+.cl-label { flex: 1; color: var(--ink2); }
+.cl-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink3); }
+
+/* ── 로딩 ── */
+.loading-state {
+  padding: 60px 24px;
+  text-align: center;
+  display: none;
+}
+.loading-state.active { display: block; }
+.loading-spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--ink3); line-height: 1.8; }
+
+/* ── 빈 상태 ── */
+.empty-state {
+  grid-column: 1/-1;
+  padding: 80px 24px;
+  text-align: center;
+}
+.empty-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: var(--ink2);
+  margin-bottom: 8px;
+}
+.empty-desc { font-size: 13px; color: var(--ink3); line-height: 1.7; }
+
+/* ── divider ── */
+.divider { height: 1px; background: var(--border); margin: 0; }
+
+/* ── 면책 ── */
+.disclaimer {
+  grid-column: 1/-1;
+  padding: 14px 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--ink3);
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-name">Analyst</div>
+    <div class="brand-sub">AI 주식 분석 시스템</div>
+  </div>
+  <div class="header-right">
+    <div id="key-status"></div>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span>Gemini AI 엔진</span>
+    </div>
+    <div class="date-display" id="header-date"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 검색 섹션 -->
+  <div class="search-section">
+    <div class="search-headline">테마 · 종목 분석</div>
+    <div class="search-desc">분석하고 싶은 테마나 종목을 입력하세요. AI가 실시간으로 호재·악재를 수집하고 투자 전략을 제시합니다.</div>
+    <div class="search-row">
+      <input class="search-input" id="search-input" type="text"
+        placeholder="예: 방산, 2차전지, 삼성전자, AI반도체, 바이오..."
+        onkeydown="if(event.key==='Enter') doAnalyze()">
+      <button class="btn-analyze" id="analyze-btn" onclick="doAnalyze()">분석 시작</button>
+    </div>
+    <div class="quick-tags">
+      <span class="quick-label">빠른 선택</span>
+      <button class="qtag" onclick="quickSearch('방산')">🛡️ 방산</button>
+      <button class="qtag" onclick="quickSearch('2차전지')">🔋 2차전지</button>
+      <button class="qtag" onclick="quickSearch('AI반도체')">💾 AI반도체</button>
+      <button class="qtag" onclick="quickSearch('조선')">🚢 조선</button>
+      <button class="qtag" onclick="quickSearch('바이오')">🧬 바이오</button>
+      <button class="qtag" onclick="quickSearch('전력인프라')">⚡ 전력인프라</button>
+      <button class="qtag" onclick="quickSearch('로봇')">🤖 로봇</button>
+    </div>
+  </div>
+
+  <!-- 메인 결과 -->
+  <div id="main-col">
+
+    <!-- 로딩 -->
+    <div class="loading-state card" id="loading-state">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loading-text">AI가 뉴스를 수집하고 있습니다...</div>
+    </div>
+
+    <!-- 빈 상태 -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-title">분석할 테마를 선택하세요</div>
+      <div class="empty-desc">위 검색창에 테마나 종목명을 입력하거나<br>빠른 선택 버튼을 클릭하면 AI 분석이 시작됩니다.</div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="result-area" id="result-area" style="display:none;"></div>
+
+  </div>
+
+  <!-- 오른쪽 패널 -->
+  <div class="right-col" id="right-col">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">골든 픽</span>
+        <span class="card-meta">AI 최우선 추천</span>
+      </div>
+      <div class="card-body" style="padding:40px 24px;text-align:center;">
+        <div style="font-size:13px;color:var(--ink3);">분석 후 표시됩니다</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">뉴스 피드</span>
+        <span class="card-meta" id="news-time">—</span>
+      </div>
+      <div class="news-feed" id="news-feed">
+        <div style="padding:40px 24px;text-align:center;font-size:13px;color:var(--ink3);">분석 후 표시됩니다</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 면책 -->
+  <div class="disclaimer" id="disclaimer" style="display:none;">
+    ⚠ 본 분석은 AI가 공개 정보를 기반으로 생성한 참고 자료입니다. 실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 하며, 투자 손실에 대해 책임지지 않습니다.
+  </div>
+
+</div>
+
+<!-- API 키 설정 모달 -->
+<div class="modal-overlay" id="key-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Google Gemini API 설정</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">무료 · 하루 1,500회 분석 가능</div>
+      </div>
+      <button class="modal-close" onclick="closeKeyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;padding:14px;background:var(--surface2);border:1px solid var(--border);font-size:12px;color:var(--ink2);line-height:1.8;">
+        <b>API 키 발급 방법</b><br>
+        1. <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com/apikey</a> 접속<br>
+        2. 구글 계정 로그인<br>
+        3. <b>Create API Key</b> 클릭 후 복사
+      </div>
+      <div style="margin-bottom:10px;font-size:12px;color:var(--ink2);font-weight:500;">API 키 입력</div>
+      <input id="api-key-input" type="password"
+        placeholder="AIza로 시작하는 키를 붙여넣으세요"
+        style="width:100%;padding:12px 16px;border:1px solid var(--border2);background:var(--bg);font-size:13px;font-family:'DM Mono',monospace;outline:none;margin-bottom:12px;color:var(--ink);"
+        onkeydown="if(event.key==='Enter')saveApiKey()">
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveApiKey()"
+          style="flex:1;padding:11px;background:var(--ink);color:#fff;border:none;font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer;font-weight:500;">
+          저장하고 분석 시작
+        </button>
+        <button onclick="closeKeyModal()"
+          style="padding:11px 20px;background:transparent;border:1px solid var(--border2);font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer;color:var(--ink2);">
+          취소
+        </button>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--ink3);line-height:1.7;">
+        🔒 키는 브라우저 내부(localStorage)에만 저장됩니다. 외부로 전송되지 않습니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 종목 상세 모달 -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div id="modal-name" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--ink);"></div>
+        <div id="modal-code" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink3);margin-top:2px;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// Gemini API 호출
+// ══════════════════════════════════════
+function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || '';
+}
+
+const PROXY_URL = 'https://script.google.com/macros/s/AKfycbz40uc9B11TOzv8gIq5AUG-SAr7FrARuH96NGzK28y5UA24KJH0s6UIMU-nz9X1Qv5F/exec';
+
+async function callGemini(prompt) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('API_KEY_MISSING');
+
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey, prompt })
+  });
+
+  if (!res.ok) throw new Error('프록시 서버 오류 (' + res.status + ')');
+
+  const data = await res.json();
+
+  // Gemini 응답 파싱
+  if (data.error) throw new Error(data.error.message || 'Gemini API 오류');
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ══════════════════════════════════════
+// 분석 메인
+// ══════════════════════════════════════
+let currentData = null;
+
+function quickSearch(theme) {
+  document.getElementById('search-input').value = theme;
+  doAnalyze();
+}
+
+async function doAnalyze() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+
+  // UI 상태 전환
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('result-area').style.display = 'none';
+  document.getElementById('loading-state').classList.add('active');
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('disclaimer').style.display = 'none';
+
+  const loadingMsgs = [
+    `"${query}" 관련 뉴스를 수집하고 있습니다...`,
+    '호재·악재를 분류하는 중입니다...',
+    '종목별 점수를 계산하고 있습니다...',
+    '시나리오 시뮬레이션 중...',
+    '리포트를 작성하고 있습니다...'
+  ];
+  let mi = 0;
+  const msgTimer = setInterval(() => {
+    document.getElementById('loading-text').textContent = loadingMsgs[mi % loadingMsgs.length];
+    mi++;
+  }, 1200);
+
+  try {
+    const prompt = `당신은 대한민국 최고의 주식 애널리스트입니다. "${query}" 테마/종목에 대해 2026년 3월 현재 시점 기준으로 철저하게 분석하세요.
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
+
+{
+  "theme": "${query}",
+  "score": 숫자(0-100),
+  "grade": "강력매수/매수/관망/회피 중 하나",
+  "summary": "테마/종목에 대한 현황 요약 2-3문장",
+  "tags": ["태그1","태그2","태그3","태그4","태그5"],
+  "tagTypes": ["pos/neg/neu/acc","pos/neg/neu/acc","pos/neg/neu/acc","pos/neg/neu/acc","pos/neg/neu/acc"],
+  "positives": [
+    {"text": "구체적인 호재 내용 (수치 포함)", "strength": "strong/mid/weak"},
+    {"text": "구체적인 호재 내용", "strength": "strong/mid/weak"},
+    {"text": "구체적인 호재 내용", "strength": "strong/mid/weak"},
+    {"text": "구체적인 호재 내용", "strength": "strong/mid/weak"},
+    {"text": "구체적인 호재 내용", "strength": "strong/mid/weak"}
+  ],
+  "negatives": [
+    {"text": "구체적인 악재 내용 (수치 포함)", "strength": "strong/mid/weak"},
+    {"text": "구체적인 악재 내용", "strength": "strong/mid/weak"},
+    {"text": "구체적인 악재 내용", "strength": "strong/mid/weak"}
+  ],
+  "stocks": [
+    {
+      "name": "종목명",
+      "code": "종목코드",
+      "market": "KOSPI/KOSDAQ",
+      "verdict": "강력매수/매수/관망/회피",
+      "score": 숫자(0-100),
+      "per": "PER 수치",
+      "target": "목표주가 상승여력 예: +25%",
+      "stopLoss": "손절선 예: -5%",
+      "orderbook": "수주잔고 또는 주요 지표",
+      "reasons": ["매수이유1","매수이유2","매수이유3"],
+      "warnings": ["리스크1","리스크2"],
+      "checklistOk": ["체크리스트 통과 항목1","항목2","항목3"],
+      "checklistNo": ["미충족 항목1","항목2"]
+    }
+  ],
+  "scenarios": [
+    {
+      "type": "bull",
+      "label": "강세 시나리오",
+      "prob": 숫자(0-100),
+      "desc": "강세 조건과 근거 설명",
+      "returns": ["종목명 +X%~Y%","종목명 +X%~Y%"]
+    },
+    {
+      "type": "base",
+      "label": "기본 시나리오",
+      "prob": 숫자(0-100),
+      "desc": "기본 조건과 근거 설명",
+      "returns": ["종목명 +X%~Y%","종목명 +X%~Y%"]
+    },
+    {
+      "type": "bear",
+      "label": "약세 시나리오",
+      "prob": 숫자(0-100),
+      "desc": "약세 조건과 근거 설명",
+      "returns": ["종목명 -X%~Y%","종목명 -X%~Y%"]
+    }
+  ],
+  "goldenPick": {
+    "name": "최우선 추천 종목명",
+    "tagline": "추천 이유 한 줄",
+    "score": 숫자,
+    "metrics": [
+      {"label": "2026 영업익", "value": "수치"},
+      {"label": "수주잔고", "value": "수치"},
+      {"label": "목표주가", "value": "+X%"},
+      {"label": "손절선", "value": "-X%"}
+    ],
+    "reasons": ["핵심 이유1","핵심 이유2","핵심 이유3","핵심 이유4"]
+  },
+  "news": [
+    {"time": "시간", "title": "뉴스 제목 (구체적 수치 포함)", "tag": "hot/pos/neg/info", "tickers": ["종목1"]},
+    {"time": "시간", "title": "뉴스 제목", "tag": "hot/pos/neg/info", "tickers": ["종목1"]},
+    {"time": "시간", "title": "뉴스 제목", "tag": "hot/pos/neg/info", "tickers": ["종목1"]},
+    {"time": "시간", "title": "뉴스 제목", "tag": "hot/pos/neg/info", "tickers": ["종목1"]},
+    {"time": "시간", "title": "뉴스 제목", "tag": "hot/pos/neg/info", "tickers": ["종목1"]},
+    {"time": "시간", "title": "뉴스 제목", "tag": "hot/pos/neg/info", "tickers": ["종목1"]}
+  ]
+}`;
+
+    const raw = await callGemini(prompt);
+    clearInterval(msgTimer);
+
+    // JSON 파싱
+    let data;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      data = JSON.parse(clean);
+    } catch {
+      throw new Error('응답 파싱 실패');
+    }
+
+    currentData = data;
+    renderResult(data);
+
+  } catch (err) {
+    clearInterval(msgTimer);
+    document.getElementById('loading-state').classList.remove('active');
+    if (err.message === 'API_KEY_MISSING') {
+      showKeyModal();
+    } else {
+      document.getElementById('loading-text').textContent = '오류: ' + err.message;
+      document.getElementById('loading-state').classList.add('active');
+      setTimeout(() => {
+        document.getElementById('loading-state').classList.remove('active');
+        document.getElementById('empty-state').style.display = 'block';
+      }, 3000);
+    }
+  } finally {
+    document.getElementById('analyze-btn').disabled = false;
+  }
+}
+
+// ══════════════════════════════════════
+// API 키 설정 모달
+// ══════════════════════════════════════
+function showKeyModal() {
+  document.getElementById('key-modal').classList.add('open');
+}
+function closeKeyModal() {
+  document.getElementById('key-modal').classList.remove('open');
+}
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { alert('API 키를 입력해주세요.'); return; }
+  localStorage.setItem('gemini_api_key', key);
+  closeKeyModal();
+  // 상태 업데이트
+  updateKeyStatus();
+  doAnalyze();
+}
+function updateKeyStatus() {
+  const key = getApiKey();
+  const el = document.getElementById('key-status');
+  if (!el) return;
+  if (key) {
+    el.innerHTML = `<span style="color:var(--positive);">● API 연결됨</span>
+      <button onclick="clearApiKey()" style="margin-left:8px;padding:2px 8px;border:1px solid var(--border2);background:transparent;font-size:10px;cursor:pointer;color:var(--ink3);">키 변경</button>`;
+  } else {
+    el.innerHTML = `<button onclick="showKeyModal()" style="padding:4px 12px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">API 키 설정</button>`;
+  }
+}
+function clearApiKey() {
+  localStorage.removeItem('gemini_api_key');
+  updateKeyStatus();
+}
+
+// ══════════════════════════════════════
+// 렌더링
+// ══════════════════════════════════════
+function renderResult(d) {
+  document.getElementById('loading-state').classList.remove('active');
+
+  const gradeColor = {
+    '강력매수': 'var(--positive)', '매수': 'var(--accent)',
+    '관망': 'var(--neutral)', '회피': 'var(--negative)'
+  }[d.grade] || 'var(--ink)';
+
+  const gradeClass = {
+    '강력매수': 'vp-sb', '매수': 'vp-b', '관망': 'vp-w', '회피': 'vp-av'
+  }[d.grade] || 'vp-w';
+
+  // ── 스코어카드
+  const tags = (d.tags||[]).map((t,i)=>{
+    const tc = {'pos':'tag-pos','neg':'tag-neg','neu':'tag-neu','acc':'tag-acc'}[(d.tagTypes||[])[i]] || 'tag-neu';
+    return `<span class="sc-tag ${tc}">${t}</span>`;
+  }).join('');
+
+  const scorecard = `
+    <div class="scorecard">
+      <div>
+        <div class="sc-theme">THEME ANALYSIS</div>
+        <div class="sc-title">${d.theme}</div>
+        <div class="sc-summary">${d.summary||''}</div>
+        <div class="sc-tags">${tags}</div>
+      </div>
+      <div class="sc-score-wrap">
+        <div style="font-size:10px;color:var(--ink3);letter-spacing:2px;margin-bottom:6px;font-family:'DM Mono',monospace;">AI 종합점수</div>
+        <div class="sc-score-num" style="color:${gradeColor};">${d.score}</div>
+        <div class="sc-grade" style="border-color:${gradeColor};color:${gradeColor};">${d.grade}</div>
+        <div class="sc-ratio">호재 ${(d.positives||[]).length} : 악재 ${(d.negatives||[]).length}</div>
+      </div>
+    </div>`;
+
+  // ── 호재/악재
+  const strengthLabel = {'strong':'HIGH','mid':'MID','weak':'LOW'};
+  const strengthClass = {'strong':'badge-strong','mid':'badge-mid','weak':'badge-weak'};
+  const posList = (d.positives||[]).map(p=>`
+    <div class="factor-item">
+      <div class="fi-icon">↑</div>
+      <div class="fi-body">
+        <div class="fi-text">${p.text}</div>
+        <span class="fi-badge ${strengthClass[p.strength]||'badge-mid'}">${strengthLabel[p.strength]||'MID'}</span>
+      </div>
+    </div>`).join('');
+  const negList = (d.negatives||[]).map(n=>`
+    <div class="factor-item">
+      <div class="fi-icon">↓</div>
+      <div class="fi-body">
+        <div class="fi-text">${n.text}</div>
+        <span class="fi-badge ${strengthClass[n.strength]||'badge-mid'}">${strengthLabel[n.strength]||'MID'}</span>
+      </div>
+    </div>`).join('');
+
+  const factors = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">호재 · 악재 분석</span>
+        <span class="card-meta">실시간 AI 수집</span>
+      </div>
+      <div class="factor-grid">
+        <div class="factor-col pos-col">
+          <div class="factor-col-head">
+            <span class="factor-col-title">호재</span>
+            <span class="factor-col-count">${(d.positives||[]).length}건</span>
+          </div>
+          ${posList}
+        </div>
+        <div class="factor-col neg-col">
+          <div class="factor-col-head">
+            <span class="factor-col-title">악재</span>
+            <span class="factor-col-count">${(d.negatives||[]).length}건</span>
+          </div>
+          ${negList}
+        </div>
+      </div>
+    </div>`;
+
+  // ── 종목 테이블
+  const verdictMap = {'강력매수':'vp-sb','매수':'vp-b','관망':'vp-w','회피':'vp-av'};
+  const scoreBgMap = s => s>=80?'var(--positive)':s>=60?'var(--accent)':s>=40?'var(--neutral)':'var(--negative)';
+  const stockRows = (d.stocks||[]).map((s,i)=>`
+    <tr onclick="openModal(${i})">
+      <td>
+        <div class="st-name">${s.name}</div>
+        <div class="st-code">${s.code} <span class="st-market">${s.market}</span></div>
+      </td>
+      <td><span class="verdict-pill ${verdictMap[s.verdict]||'vp-w'}">${s.verdict}</span></td>
+      <td>
+        <div class="score-pill">
+          <span style="font-size:14px;font-weight:600;color:${scoreBgMap(s.score)};">${s.score}</span>
+          <div class="score-bar-mini"><div class="sbm-fill" style="width:${s.score}%;background:${scoreBgMap(s.score)};"></div></div>
+        </div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink2);">${s.per||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--positive);font-weight:500;">${s.target||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--negative);">${s.stopLoss||'—'}</td>
+    </tr>`).join('');
+
+  const stockTable = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">종목별 분석</span>
+        <span class="card-meta">클릭하면 상세 보기</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>종목</th>
+              <th>판정</th>
+              <th>AI점수</th>
+              <th>PER</th>
+              <th>목표가</th>
+              <th>손절선</th>
+            </tr>
+          </thead>
+          <tbody>${stockRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // ── 시나리오
+  const scenTypeClass = {'bull':'si-bull','base':'si-base','bear':'si-bear'};
+  const scenProbColor = {'bull':'var(--positive)','base':'var(--accent)','bear':'var(--negative)'};
+  const scenList = (d.scenarios||[]).map(sc=>`
+    <div class="scenario-item ${scenTypeClass[sc.type]||'si-base'}">
+      <div>
+        <div class="si-label">${sc.label}</div>
+        <div class="si-desc">${sc.desc}</div>
+      </div>
+      <div class="si-prob-wrap">
+        <div class="si-prob-num">${sc.prob}<span style="font-size:16px;">%</span></div>
+        <div class="si-prob-label">확률</div>
+      </div>
+      <div class="si-returns">
+        ${(sc.returns||[]).map(r=>`<span class="si-ret">${r}</span>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const scenarios = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">시나리오 시뮬레이션</span>
+        <span class="card-meta">AI 확률 기반</span>
+      </div>
+      <div class="card-body">
+        <div class="scenario-list">${scenList}</div>
+      </div>
+    </div>`;
+
+  // 결과 렌더
+  document.getElementById('result-area').innerHTML = scorecard + factors + stockTable + scenarios;
+  document.getElementById('result-area').style.display = 'flex';
+
+  // ── 골든픽
+  const gp = d.goldenPick || {};
+  const gpMetrics = (gp.metrics||[]).map(m=>`
+    <div class="gmet">
+      <div class="gmet-lbl">${m.label}</div>
+      <div class="gmet-val">${m.value}</div>
+    </div>`).join('');
+  const gpReasons = (gp.reasons||[]).map(r=>`
+    <div class="gr"><span class="gr-icon" style="color:var(--positive);">✓</span><span>${r}</span></div>`).join('');
+
+  document.getElementById('right-col').innerHTML = `
+    <div class="golden-card">
+      <div class="golden-top">
+        <div class="golden-eyebrow">★ GOLDEN PICK</div>
+        <div class="golden-name">${gp.name||'—'}</div>
+        <div class="golden-tagline">${gp.tagline||''}</div>
+      </div>
+      <div class="golden-body">
+        <div class="golden-score-row">
+          <div class="gs-left">AI SCORE</div>
+          <div class="gs-right">${gp.score||'—'}</div>
+        </div>
+        <div class="golden-metrics">${gpMetrics}</div>
+        <div class="golden-reasons">${gpReasons}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">뉴스 피드</span>
+        <span class="card-meta" id="news-time">${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="news-feed" id="news-feed">${renderNews(d.news||[])}</div>
+    </div>`;
+
+  document.getElementById('disclaimer').style.display = 'block';
+
+  // 스크롤 탑
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function renderNews(news) {
+  const tagClass = {'hot':'nb-hot','pos':'nb-pos','neg':'nb-neg','info':'nb-info'};
+  const tagLabel = {'hot':'HOT','pos':'호재','neg':'악재','info':'참고'};
+  return news.map(n=>`
+    <div class="news-item">
+      <div class="ni-meta">
+        <span class="ni-time">${n.time}</span>
+        <span class="ni-badge ${tagClass[n.tag]||'nb-info'}">${tagLabel[n.tag]||'참고'}</span>
+        ${(n.tickers||[]).map(t=>`<span style="font-size:9px;color:var(--ink3);font-family:'DM Mono',monospace;">${t}</span>`).join('')}
+      </div>
+      <div class="ni-text">${n.title}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════
+// 종목 상세 모달
+// ══════════════════════════════════════
+function openModal(idx) {
+  if (!currentData?.stocks?.[idx]) return;
+  const s = currentData.stocks[idx];
+  const verdictMap = {'강력매수':'vp-sb','매수':'vp-b','관망':'vp-w','회피':'vp-av'};
+  const checkOk = (s.checklistOk||[]).map(c=>`
+    <div class="cl-item">
+      <div class="cl-icon cl-ok">✓</div>
+      <span class="cl-label">${c}</span>
+    </div>`).join('');
+  const checkNo = (s.checklistNo||[]).map(c=>`
+    <div class="cl-item">
+      <div class="cl-icon cl-no">✗</div>
+      <span class="cl-label" style="color:var(--negative);">${c}</span>
+    </div>`).join('');
+
+  document.getElementById('modal-name').textContent = s.name;
+  document.getElementById('modal-code').textContent = `${s.code} · ${s.market}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <span class="verdict-pill ${verdictMap[s.verdict]||'vp-w'}" style="font-size:12px;padding:5px 14px;">${s.verdict}</span>
+      <span style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:${s.score>=80?'var(--positive)':s.score>=60?'var(--accent)':'var(--neutral)'};">${s.score}</span>
+      <span style="font-size:12px;color:var(--ink3);">AI 종합점수</span>
+    </div>
+    <div class="modal-grid">
+      <div class="mg-item"><div class="mg-lbl">PER</div><div class="mg-val">${s.per||'—'}</div></div>
+      <div class="mg-item"><div class="mg-lbl">목표주가</div><div class="mg-val" style="color:var(--positive);">${s.target||'—'}</div></div>
+      <div class="mg-item"><div class="mg-lbl">손절선</div><div class="mg-val" style="color:var(--negative);">${s.stopLoss||'—'}</div></div>
+      <div class="mg-item"><div class="mg-lbl">수주/지표</div><div class="mg-val">${s.orderbook||'—'}</div></div>
+    </div>
+    <div class="modal-section-title">매수 근거</div>
+    ${(s.reasons||[]).map(r=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink2);display:flex;gap:8px;align-items:flex-start;"><span style="color:var(--positive);flex-shrink:0;">↑</span>${r}</div>`).join('')}
+    <div class="modal-section-title">리스크 요인</div>
+    ${(s.warnings||[]).map(w=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--negative);display:flex;gap:8px;align-items:flex-start;"><span style="flex-shrink:0;">↓</span>${w}</div>`).join('')}
+    <div class="modal-section-title">진입 체크리스트</div>
+    <div class="checklist">${checkOk}${checkNo}</div>`;
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ══════════════════════════════════════
+// 날짜
+// ══════════════════════════════════════
+document.getElementById('header-date').textContent =
+  new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+// 초기화
+updateKeyStatus();
+if (!getApiKey()) {
+  setTimeout(() => showKeyModal(), 500);
+}
+</script>
+</body>
+</html>
